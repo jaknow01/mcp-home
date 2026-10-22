@@ -1,13 +1,13 @@
 # Talking to the smart lights (Tuya local protocol) — design & decisions
 
-This document records **why** the smart-lighting layer (`lib/agents/iot_operator/device.py` +
-`lib/agents/iot_operator/tuya_link.py`) is built the way it is. It is the outcome of the stability
-investigation in [`smoke-tests/`](../smoke-tests/README.md); read that for the raw
+This document records **why** the smart-lighting layer (`src/mcp_home/device.py` +
+`src/mcp_home/tuya_link.py`) is built the way it is. It is the outcome of the stability
+investigation in [`smoke-tests/` in the Jarvis repo](https://github.com/jaknow01/jarvis/tree/main/smoke-tests); read that for the raw
 measurements. This file is the "so we decided…" companion.
 
 ## Background: the "side door"
 
-The `iot_operator` agent controls Tuya smart bulbs through
+The home server (formerly Jarvis's `iot_operator` agent) controls Tuya smart bulbs through
 [`tinytuya`](https://github.com/jasonacox/tinytuya), which speaks the devices'
 **local** protocol: a TCP server on each bulb at port `6668`, protocol 3.3,
 authenticated with a per-device local key. This is fast (LAN, no cloud round-trip)
@@ -45,7 +45,7 @@ The Tuya **phone app**, by contrast, controls the bulbs through the **Tuya cloud
 
 ### D1 — Reuse one persistent connection per device (not fresh-per-call)
 `set_socketPersistent(True)`, opened lazily on first use and cached in a
-process-wide manager (`lib/agents/iot_operator/tuya_link.py`). This removes the cold TCP handshake from
+process-wide manager (`src/mcp_home/tuya_link.py`). This removes the cold TCP handshake from
 every command — the biggest measured win.
 
 ### D2 — "Good citizen", not "always warm"
@@ -86,7 +86,7 @@ didn't respond.
 ("turn on the lights at sunset") so the first command of an unattended action doesn't
 pay the cold penalty — the benefit of always-warm, only when actually needed.
 
-## Tunables (`lib/agents/iot_operator/tuya_link.py`)
+## Tunables (`src/mcp_home/tuya_link.py`)
 
 | Constant | Default | Meaning |
 |----------|---------|---------|
