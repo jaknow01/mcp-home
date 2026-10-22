@@ -1,0 +1,7 @@
+# Devices per principal. Copy to config/home.yaml (gitignored). The devices file holds Tuya
+# local keys — keep it on the home server only.
+# Principal = a household group id Jarvis forwards (X-On-Behalf-Of), or a client id.
+scopes:
+  - principals: [dom]
+    devices_file: data/smart_devices.json      # Jarvis's data/smart_device_data/smart_devices.json
+    preferences_file: data/preferences.json    # optional

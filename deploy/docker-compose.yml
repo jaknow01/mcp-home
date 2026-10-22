@@ -1,0 +1,19 @@
+# mcp-home on the home Raspberry Pi (NOT in the cluster).
+#   cp config/clients.example.yaml config/clients.yaml   # add Jarvis's trusted key
+#   cp config/home.example.yaml config/home.yaml         # point at your devices file
+#   docker compose -f deploy/docker-compose.yml up -d
+services:
+  mcp-home:
+    image: ghcr.io/jaknow01/mcp-home:v0.1.0   # multi-arch (arm64 for the Pi)
+    container_name: mcp-home
+    restart: unless-stopped
+    # Host networking: Tuya discovery uses UDP broadcasts on the LAN (ports 6666/6667),
+    # which a bridged container would not see.
+    network_mode: host
+    environment:
+      MCP_PORT: "8010"
+      MCP_CLIENTS_CONFIG: /config/clients.yaml
+      MCP_HOME_CONFIG: /config/home.yaml
+    volumes:
+      - ../config:/config:ro
+      - ../data:/data:ro        # smart_devices.json / preferences.json (home.yaml paths: /data/...)

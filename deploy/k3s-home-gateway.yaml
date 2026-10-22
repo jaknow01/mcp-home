@@ -1,0 +1,71 @@
+# The cluster's ONLY path into the home network: a pod holding a WireGuard peer of the home
+# router, forwarding TCP :8010 to the Pi. Exposed in-cluster as service `mcp-home` (namespace
+# jarvis); a NetworkPolicy lets only Jarvis pods use it. See README "Reaching it from k3s".
+#
+#   kubectl -n jarvis create secret generic home-gateway-wg --from-file=wg0.conf=wg0.conf
+# wg0.conf (the cluster's peer on the router):
+#   [Interface]
+#   PrivateKey = <cluster peer private key>
+#   Address = 10.8.0.50/32
+#   [Peer]
+#   PublicKey = <router public key>
+#   Endpoint = <home public IP or DDNS>:51820
+#   AllowedIPs = <pi-lan-ip>/32          # route ONLY the Pi through the tunnel
+#   PersistentKeepalive = 25
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: home-gateway
+  namespace: jarvis
+  labels: {app: home-gateway}
+spec:
+  replicas: 1
+  selector:
+    matchLabels: {app: home-gateway}
+  template:
+    metadata:
+      labels: {app: home-gateway}
+    spec:
+      containers:
+        - name: wireguard
+          image: lscr.io/linuxserver/wireguard:1.0.20210914
+          securityContext:
+            capabilities: {add: [NET_ADMIN]}      # pod-scoped; the node's network is untouched
+          env:
+            - {name: PUID, value: "1000"}
+            - {name: PGID, value: "1000"}
+            - {name: TZ, value: Europe/Warsaw}
+          volumeMounts:
+            - {name: wg, mountPath: /config/wg_confs, readOnly: true}
+        - name: forwarder
+          image: alpine/socat:1.8.0.0
+          args: ["TCP-LISTEN:8010,fork,reuseaddr", "TCP:192.168.1.23:8010"]   # <pi-lan-ip>
+          ports: [{containerPort: 8010, name: http}]
+          readinessProbe: {tcpSocket: {port: http}, periodSeconds: 15}
+      volumes:
+        - name: wg
+          secret: {secretName: home-gateway-wg}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: mcp-home
+  namespace: jarvis
+spec:
+  selector: {app: home-gateway}
+  ports: [{name: http, port: 80, targetPort: http}]
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: home-gateway-only-jarvis
+  namespace: jarvis
+spec:
+  podSelector:
+    matchLabels: {app: home-gateway}
+  policyTypes: [Ingress]
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels: {app: jarvis}
+      ports: [{port: 8010, protocol: TCP}]

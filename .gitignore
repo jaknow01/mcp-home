@@ -1,0 +1,9 @@
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+.env
+config/clients.yaml
+data/
+.cache.sqlite
+config/home.yaml

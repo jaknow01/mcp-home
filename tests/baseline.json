@@ -1,0 +1,176 @@
+{
+  "agent": "iot_operator",
+  "tools": [
+    {
+      "name": "change_color",
+      "description": "change_color(device_name: str, new_color: lib.agents.iot_operator.device.RGB) -> dict\n\nDescription:\nThis tool is used to change the colour of the given smart device.\nIn order to set a new RGB value device must be in 'colour' lighting mode.\n\nParameters:\nctx : Context\n    Context in which the tool operates\n\ndevice_name: str\n    The name of the device that is to be affected by the color change.\n    Note: this device must be in 'colour' lighting mode in order for the change to be possible\n\nnew_color: RGB\n    The new color that the device will be set to as an RGB value.\n    RGB values are integers from 0 to 255 where R = red, G = green, B = blue\n\nOutput:\n    This tool returns short information whether the attempt was successful",
+      "input_schema": {
+        "$defs": {
+          "RGB": {
+            "properties": {
+              "R": {
+                "description": "Red channel, 0-255",
+                "title": "R",
+                "type": "integer"
+              },
+              "G": {
+                "description": "Green channel, 0-255",
+                "title": "G",
+                "type": "integer"
+              },
+              "B": {
+                "description": "Blue channel, 0-255",
+                "title": "B",
+                "type": "integer"
+              }
+            },
+            "required": [
+              "R",
+              "G",
+              "B"
+            ],
+            "title": "RGB",
+            "type": "object"
+          }
+        },
+        "properties": {
+          "device_name": {
+            "title": "Device Name",
+            "type": "string"
+          },
+          "new_color": {
+            "$ref": "#/$defs/RGB"
+          }
+        },
+        "required": [
+          "device_name",
+          "new_color"
+        ],
+        "type": "object"
+      }
+    },
+    {
+      "name": "change_light_temperature",
+      "description": "change_light_temperature(device_name: str, new_temp: Annotated[int, 'range 0-1000']) -> dict\n\nDescription:\nThis tool is used to change the colour temperature of the given device.\nIn order to set a new color temperature the device must be in 'white' lighting mode.\n\nParameters:\nctx : Context\n    Context in which the tool operates\n\ndevice_name: str\n    The name of the device that is to be affected by the lighting temperature change.\n    Note: this device must be in 'white' lighting mode in order for the change to be possible\n\nnew_temp: Annotated[int, \"range 0-1000\"]\n    This parameter controls the temperature value where 0 is the brightest and 1000 the coldest\n\nOutput:\n    This tool returns short information whether the attempt was successful",
+      "input_schema": {
+        "properties": {
+          "device_name": {
+            "title": "Device Name",
+            "type": "string"
+          },
+          "new_temp": {
+            "description": "range 0-1000",
+            "title": "New Temp",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "device_name",
+          "new_temp"
+        ],
+        "type": "object"
+      }
+    },
+    {
+      "name": "change_lighting_mode",
+      "description": "change_lighting_mode(device_name: str, new_mode: lib.agents.iot_operator.device.Mode) -> dict\n\nDescription:\nThis tool is used to change the lighting mode of a given smart device. Lighting mode can either\nbe set to white or colour mode. When in colour mode various rgb settings can be applied to the\ndevice. When in white mode the lighting temperature can be adjusted.\n\nParameters:\nctx : Context\n    Context in which the tool operates\n\ndevice_name: str\n    The name of the device that is to be affected by the mode change.\n\nnew_mode: Mode\n    The mode that will be applied to the chosen device",
+      "input_schema": {
+        "$defs": {
+          "Mode": {
+            "properties": {
+              "mode": {
+                "enum": [
+                  "white",
+                  "colour"
+                ],
+                "title": "Mode",
+                "type": "string"
+              }
+            },
+            "required": [
+              "mode"
+            ],
+            "title": "Mode",
+            "type": "object"
+          }
+        },
+        "properties": {
+          "device_name": {
+            "title": "Device Name",
+            "type": "string"
+          },
+          "new_mode": {
+            "$ref": "#/$defs/Mode"
+          }
+        },
+        "required": [
+          "device_name",
+          "new_mode"
+        ],
+        "type": "object"
+      }
+    },
+    {
+      "name": "get_devices_state",
+      "description": "get_devices_state()\n\nDescription:\n    This tool is used to download initial neccessary data about all smart devices from a database.\n    It is then used to establish connection and check their current states.\nNote:\n    This tool should only be run at the beginning of agent's tool calls. This provides an initial scan\n    but due to accessing of the database it has a large overhead therefore it should only be run once.\n    Devices are identified by their name; use those names with the other device tools.",
+      "input_schema": {
+        "properties": {},
+        "type": "object"
+      }
+    },
+    {
+      "name": "get_one_device_status",
+      "description": "get_one_device_status(device_name: str) -> dict\n\nDescription:\nThis tool is used to check the status of a given device without the unnecessary overhead\nof checking all devices in the system. It should be used as an intermediate tool between tool calls\ninstead of the tool get_devices_state.\n\nNote:\n    When agents wants to interact with multiple devices this tool should be run in parallel.\n\nParameters:\nctx : Context\n    Context in which the tool operates\n\ndevice_name : str\n    The name of the device whose status should be checked (as returned by get_devices_state).\n\nOutput:\n    State of the given device",
+      "input_schema": {
+        "properties": {
+          "device_name": {
+            "title": "Device Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "device_name"
+        ],
+        "type": "object"
+      }
+    },
+    {
+      "name": "turn_off_devices",
+      "description": "turn_off_devices(device_names: List[str]) -> dict\n\nDescription:\nThis tool is used to turn off all mentioned devices.\n\nParameters:\nctx : Context\n    Context in which the tool operates\n\ndevice_names : List[str]\n    Names of the devices that should be turned off (as returned by get_devices_state).\n\nOutput:\nThis tool returns the new states of the affected devices (and any names it did not recognize)",
+      "input_schema": {
+        "properties": {
+          "device_names": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Device Names",
+            "type": "array"
+          }
+        },
+        "required": [
+          "device_names"
+        ],
+        "type": "object"
+      }
+    },
+    {
+      "name": "turn_on_devices",
+      "description": "turn_on_devices(device_names: List[str]) -> dict\n\nDescription:\nThis tool is used to turn on all mentioned devices.\n\nParameters:\nctx : Context\n    Context in which the tool operates\n\ndevice_names : List[str]\n    Names of the devices that should be turned on (as returned by get_devices_state).\n\nOutput:\nThis tool returns the new states of the affected devices (and any names it did not recognize)",
+      "input_schema": {
+        "properties": {
+          "device_names": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Device Names",
+            "type": "array"
+          }
+        },
+        "required": [
+          "device_names"
+        ],
+        "type": "object"
+      }
+    }
+  ]
+}
